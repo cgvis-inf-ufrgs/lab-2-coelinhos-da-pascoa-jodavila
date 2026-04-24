@@ -399,32 +399,52 @@ int main(int argc, char* argv[])
         #define SPHERE 0
         #define BUNNY  1
         #define PLANE  2
-       float angle = (float)glfwGetTime() * 1.5;
+        float time = (float)glfwGetTime();
+        float angle = time * 1.5f;
 
+        const int bunny_count = 6;
+        const float circle_radius = 2.5f;
+        const float circle_speed = 0.6f;
+        const float jump_speed = 3.5f;
+        const float jump_radius = 0.35f;
+        const float sphere_orbit_radius = 0.45f;
+        const float sphere_scale = 0.18f;
 
-        // Dupla1
-        // Ovo 1
-        // Desenhamos o modelo da esfera
-        model = Matrix_Translate(1.0f,0.0f,0.0f)  // do coelho
-        * Matrix_Rotate(angle, glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)) // movimento 
-        * Matrix_Translate(2.0f,0.0f,0.0f) ; // distancia
-        
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, SPHERE);
-        DrawVirtualObject("the_sphere");
+        for (int i = 0; i < bunny_count; ++i)
+        {
+            float bunny_offset = i * (2.0f * 3.14159265f / bunny_count);
+            float bunny_angle = bunny_offset + time * circle_speed;
+            float jump_phase = time * jump_speed + bunny_offset * 0.7f;
+            float height = std::abs(std::sin(jump_phase)) * (jump_radius + 0.08f * std::cos(bunny_offset * 3.0f));
 
-        // Desenhamos o modelo do coelho
-        // Coelho 1
-        
-        model = Matrix_Translate(1.0f,0.0f,0.0f) ;
-//        * Matrix_Rotate(angle, glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, BUNNY);
-        DrawVirtualObject("the_bunny");
+            float bx = std::cos(bunny_angle) * circle_radius;
+            float bz = std::sin(bunny_angle) * circle_radius;
+            float by = height - 0.15f;
 
-  
+            float bunny_rot = bunny_angle + 1.57079633f;
+            model = Matrix_Translate(bx, by, bz)
+                  * Matrix_Rotate(bunny_rot, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f));
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, BUNNY);
+            DrawVirtualObject("the_bunny");
+
+            for (int s = 0; s < 2; ++s)
+            {
+                float sphere_offset = bunny_offset + s * 3.14159265f;
+                float sx = bx + std::cos(time * 2.0f + sphere_offset) * sphere_orbit_radius;
+                float sz = bz + std::sin(time * 2.0f + sphere_offset) * sphere_orbit_radius;
+                float sy = by + 0.25f;
+
+                model = Matrix_Translate(sx, sy, sz)
+                      * Matrix_Scale(sphere_scale, sphere_scale, sphere_scale);
+                glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                glUniform1i(g_object_id_uniform, SPHERE);
+                DrawVirtualObject("the_sphere");
+            }
+        }
+
         // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.0f,0.0f) * Matrix_Scale(8.0f,1.0f,8.0f);
+        model = Matrix_Translate(0.0f,-1.0f,0.0f) * Matrix_Scale(10.0f,1.0f,10.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
