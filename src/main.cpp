@@ -426,10 +426,20 @@ int main(int argc, char* argv[])
             float by = height - 0.15f;
 
             // O coelho também roda no próprio eixo Y para seguir o movimento do círculo.
-            float bunny_rot = bunny_angle - 1.57079633f;
+             float bunny_rot = bunny_angle - 1.57079633f;
+           // model = Matrix_Translate(bx, by, bz)
+           //       * Matrix_Rotate(bunny_rot, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f));
+           
+           //meia cambalhota
+           //float bunny_rot = std::max(0.0f, std::sin(jump_phase)) * PI; // velocidade da cambalhota
+
+           // camablhota completa
+           //float bunny_rot = std::max(0.0f, std::sin(jump_phase)) * 2.0f * PI;
+
             model = Matrix_Translate(bx, by, bz)
-                  * Matrix_Rotate(bunny_rot, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f));
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                * Matrix_Rotate(bunny_rot, glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
+                
+                  glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, BUNNY);
             DrawVirtualObject("the_bunny");
 
@@ -441,19 +451,12 @@ int main(int argc, char* argv[])
                 float sphere_offset = bunny_offset + s * PI;
                 float orbit_phase = time * 2.0f + sphere_offset;
                 
-                //xy
-
                 //yz
-                float sx = bx + 0.35f; 
+                //float sx = bx + 0.35f; 
+                float sx = bx ; 
                 float sz = bz + std::cos(orbit_phase) * sphere_orbit_radius;
                 float sy = by + std::sin(orbit_phase) * sphere_orbit_radius;
                 
-                //xz
-                /*
-                float sx = bx + std::sin(orbit_phase) * sphere_orbit_radius;
-                float sz = bz + std::cos(orbit_phase) * sphere_orbit_radius;
-                float sy = by + 0.25f;
-                */
                 model = Matrix_Translate(sx, sy, sz)
                       * Matrix_Scale(sphere_scale, sphere_scale, sphere_scale);
                 glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
