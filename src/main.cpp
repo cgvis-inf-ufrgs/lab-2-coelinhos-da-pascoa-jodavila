@@ -401,40 +401,59 @@ int main(int argc, char* argv[])
         #define PLANE  2
         float time = (float)glfwGetTime();
         float angle = time * 1.5f;
-
+        const float PI = 3.14159265f;
         const int bunny_count = 6;
         const float circle_radius = 2.5f;
         const float circle_speed = 0.6f;
         const float jump_speed = 3.5f;
         const float jump_radius = 0.35f;
-        const float sphere_orbit_radius = 0.45f;
+        const float sphere_orbit_radius = 0.7f; // orbita da esfera ao redor do coelho
         const float sphere_scale = 0.18f;
 
+        // Loop que desenha os coelhos em círculo.
+        // Cada coelho avança no sentido horário e salta de forma ligeiramente variada.
         for (int i = 0; i < bunny_count; ++i)
         {
-            float bunny_offset = i * (2.0f * 3.14159265f / bunny_count);
-            float bunny_angle = bunny_offset + time * circle_speed;
+            float bunny_offset = i * (2.0f * PI / bunny_count);
+            float bunny_angle = bunny_offset + time * circle_speed; // sentido horário
             float jump_phase = time * jump_speed + bunny_offset * 0.7f;
-            float height = std::abs(std::sin(jump_phase)) * (jump_radius + 0.08f * std::cos(bunny_offset * 3.0f));
+           // float height = std::abs(std::sin(jump_phase)) * (jump_radius + 0.08f * std::cos(bunny_offset * 3.0f));
+            float height = std::max(0.0f, std::sin(jump_phase)) * jump_radius;
 
+            // Posição do coelho no círculo.
             float bx = std::cos(bunny_angle) * circle_radius;
             float bz = std::sin(bunny_angle) * circle_radius;
             float by = height - 0.15f;
 
-            float bunny_rot = bunny_angle + 1.57079633f;
+            // O coelho também roda no próprio eixo Y para seguir o movimento do círculo.
+            float bunny_rot = bunny_angle - 1.57079633f;
             model = Matrix_Translate(bx, by, bz)
                   * Matrix_Rotate(bunny_rot, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f));
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, BUNNY);
             DrawVirtualObject("the_bunny");
 
+            // Duas esferas circulam em torno de cada coelho no plano XZ.
+            // A órbita passa por cima, direita, baixo e esquerda do coelho.
             for (int s = 0; s < 2; ++s)
             {
-                float sphere_offset = bunny_offset + s * 3.14159265f;
-                float sx = bx + std::cos(time * 2.0f + sphere_offset) * sphere_orbit_radius;
-                float sz = bz + std::sin(time * 2.0f + sphere_offset) * sphere_orbit_radius;
-                float sy = by + 0.25f;
+                // faz que fiquem 180º de distancia
+                float sphere_offset = bunny_offset + s * PI;
+                float orbit_phase = time * 2.0f + sphere_offset;
+                
+                //xy
 
+                //yz
+                float sx = bx + 0.35f; 
+                float sz = bz + std::cos(orbit_phase) * sphere_orbit_radius;
+                float sy = by + std::sin(orbit_phase) * sphere_orbit_radius;
+                
+                //xz
+                /*
+                float sx = bx + std::sin(orbit_phase) * sphere_orbit_radius;
+                float sz = bz + std::cos(orbit_phase) * sphere_orbit_radius;
+                float sy = by + 0.25f;
+                */
                 model = Matrix_Translate(sx, sy, sz)
                       * Matrix_Scale(sphere_scale, sphere_scale, sphere_scale);
                 glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
