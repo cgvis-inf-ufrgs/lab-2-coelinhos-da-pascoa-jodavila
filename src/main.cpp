@@ -396,77 +396,159 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(g_projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
-        #define SPHERE 0
-        #define BUNNY  1
-        #define PLANE  2
-        float time = (float)glfwGetTime();
-        float angle = time * 1.5f;
-        const float PI = 3.14159265f;
-        const int bunny_count = 6;
-        const float circle_radius = 2.5f;
-        const float circle_speed = 0.6f;
-        const float jump_speed = 3.5f;
-        const float jump_radius = 0.35f;
-        const float sphere_orbit_radius = 0.7f; // orbita da esfera ao redor do coelho
-        const float sphere_scale = 0.18f;
+      #define SPHERE 0
+      #define BUNNY  1
+      #define PLANE  2
+      float time = (float)glfwGetTime();
+      float angle = time * 1.5f;
+      //const float PI = 3.14159265f; use M_PI
+      
+      // === CÓDIGO ANTIGO (ERRADO) ===
+      // const int bunny_count = 6;
+      // const float circle_radius = 2.5f;
+      // const float circle_speed = 0.6f;
+      // const float jump_speed = 3.5f;
+      // const float jump_radius = 0.35f;
+      //
+      // PROBLEMA: Os coelhos se moviam em um círculo muito grande (circle_radius = 2.5f),
+      // o que fazia com que ficassem muito espalhados na cena. Além disso, não havia
+      // animação de mortal (flip), apenas pulos simples. A rotação era apenas no eixo Y
+      // para seguir o movimento circular, sem rotação para frente.
+      // ==============================
+      
+      const int bunny_count = 6;
+      const float bunny_scale = 0.25f; 
+      const float bunny_speed  = 1.0f;  // velocidade de movimento dos coelhos
 
-        // Loop que desenha os coelhos em círculo.
-        // Cada coelho avança no sentido horário e salta de forma ligeiramente variada.
-        for (int i = 0; i < bunny_count; ++i)
+      const int egg_count = 2;
+      const float egg_orbit_radius = 0.4f;   
+      const float egg_orbit_speed = 2.0f;  
+      const float sphere_orbit_radius = 0.7f; // orbita da esfera ao redor do coelho
+      const float sphere_scale = 0.08f;
+
+      const float base_y = 0.4f;  
+      
+      const float jump_radius = 0.35f; 
+      const float jump_speed = 3.5f; 
+      const float jump_height = 0.5f;  
+    
+      const float FLIP_INTERVAL  = 6.0f;   
+      const float FLIP_DURATION  = 2.0f;
+      const float FLIP_HEIGHT    = 0.5f; 
+
+      for (int i = 0; i < bunny_count; ++i)
         {
-            float bunny_offset = i * (2.0f * PI / bunny_count);
-            float bunny_angle = bunny_offset + time * circle_speed; // sentido horário
-            float jump_phase = time * jump_speed + bunny_offset * 0.7f;
-           // float height = std::abs(std::sin(jump_phase)) * (jump_radius + 0.08f * std::cos(bunny_offset * 3.0f));
-            float height = std::max(0.0f, std::sin(jump_phase)) * jump_radius;
+          // === CÓDIGO ANTIGO (ERRADO) ===
+          // float bunny_offset = i * (2.0f * PI / bunny_count);
+          // float bunny_angle = bunny_offset + time * circle_speed; // sentido horário
+          // float jump_phase = time * jump_speed + bunny_offset * 0.7f;
+          // float height = std::max(0.0f, std::sin(jump_phase)) * jump_radius;
+          //
+          // float bx = std::cos(bunny_angle) * circle_radius;
+          // float bz = std::sin(bunny_angle) * circle_radius;
+          // float by = height - 0.15f;
+          //
+          // float bunny_rot = bunny_angle - 1.57079633f;
+          //
+          // model = Matrix_Translate(bx, by, bz)
+          //     * Matrix_Rotate(bunny_rot, glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
+          //
+          // PROBLEMA: A rotação era feita apenas no eixo X com um ângulo fixo baseado no ângulo circular,
+          // o que não fazia sentido fisicamente. O coelho não olhava na direção do movimento e não tinha
+          // animação de mortal (flip). A altura era calculada apenas com um seno simples, sem adicionar
+          // altura extra durante o mortal.
+          // ==============================
+          
+          float orbit_phase = (float)i / bunny_count;
+          float bunny_angle = -(time * bunny_speed / jump_radius + orbit_phase  * 2.0f * M_PI);
+          float bx = cosf(bunny_angle) * jump_radius;
+          float bz = sinf(bunny_angle) * jump_radius;
+          float facing = atan2f(bx, bz) + M_PI;
 
-            // Posição do coelho no círculo.
-            float bx = std::cos(bunny_angle) * circle_radius;
-            float bz = std::sin(bunny_angle) * circle_radius;
-            float by = height - 0.15f;
+          // ---- Estado do mortal ----
+          // Cada coelho tem seu próprio offset de fase para não saltarem juntos
+          float phase = (float)i / bunny_count;  // fase do coelho atual (0 a 1)
+          float t = time;  // tempo atual
+          float bunny_offset  = phase * FLIP_INTERVAL;                      // defasagem entre coelhos
+          float flipCycle   = fmodf(t + bunny_offset, FLIP_INTERVAL);       // onde estamos no ciclo
+          bool  isFlipping  = (flipCycle < FLIP_DURATION);                // estamos no mortal?
+          float flipT       = isFlipping ? (flipCycle / FLIP_DURATION) : 0.0f;
+          
+          // ---- Altura ----
+          float by;
+          float sineY = base_y + jump_height * fabs(sinf(t * jump_speed * 2.0f * M_PI + phase * 2.0f * M_PI));
+          if (i % 3 == 0){
+            by = sineY;
+          } else {
+             if (isFlipping)
+            by = sineY + FLIP_HEIGHT * sinf(flipT * M_PI); // seno base + parábola do mortal por cima
+          else
+            by = sineY;                                     // só o seno
+          };
 
-            // O coelho também roda no próprio eixo Y para seguir o movimento do círculo.
-             float bunny_rot = bunny_angle - 1.57079633f;
-           // model = Matrix_Translate(bx, by, bz)
-           //       * Matrix_Rotate(bunny_rot, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f));
-           
-           //meia cambalhota
-           //float bunny_rot = std::max(0.0f, std::sin(jump_phase)) * PI; // velocidade da cambalhota
+          // ---- Rotação do mortal (0 → 2π durante flipT) ----
+          float flipAngle = isFlipping ? (flipT * 2.0f * M_PI) : 0.0f;
 
-           // camablhota completa
-           //float bunny_rot = std::max(0.0f, std::sin(jump_phase)) * 2.0f * PI;
+          // ---- Matriz de modelagem ----
+          glm::mat4 model =
+            Matrix_Translate(bx, by, bz)
+            * Matrix_Rotate_Y(facing)       // rotação para olhar na direção do movimento
+            * Matrix_Rotate_Z(flipAngle)    // cambalhota para frente (eixo X local)
+            * Matrix_Scale(bunny_scale, bunny_scale, bunny_scale);
 
-            model = Matrix_Translate(bx, by, bz)
-                * Matrix_Rotate(bunny_rot, glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
-                
                   glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(g_object_id_uniform, BUNNY);
-            DrawVirtualObject("the_bunny");
+          glUniform1i(g_object_id_uniform, BUNNY);
+          DrawVirtualObject("the_bunny");
 
-            // Duas esferas circulam em torno de cada coelho no plano XZ.
+          // Duas esferas circulam em torno de cada coelho no plano XZ.
             // A órbita passa por cima, direita, baixo e esquerda do coelho.
-            for (int s = 0; s < 2; ++s)
+          for (int s = 0; s < egg_count; ++s)
             {
+              // === CÓDIGO ANTIGO (ERRADO) ===
+              // float sphere_offset = bunny_offset + s * PI;
+              // float orbit_phase = time * 2.0f + sphere_offset;
+              //
+              // float sx = bx ;
+              // float sz = bz + std::cos(orbit_phase) * sphere_orbit_radius;
+              // float sy = by + std::sin(orbit_phase) * sphere_orbit_radius;
+              //
+              // model = Matrix_Translate(sx, sy, sz)
+              //       * Matrix_Scale(sphere_scale, sphere_scale, sphere_scale);
+              //
+              // PROBLEMA: As esferas orbitavam no plano XZ (sz variava com cos, sy variava com sin),
+              // o que fazia com que ficassem na mesma altura do coelho. Além disso, a escala era uniforme
+              // em todos os eixos, fazendo com que as esferas parecessem perfeitamente esféricas.
+              // ==============================
+              
                 // faz que fiquem 180º de distancia
-                float sphere_offset = bunny_offset + s * PI;
-                float orbit_phase = time * 2.0f + sphere_offset;
-                
+              float sphere_offset = t * egg_orbit_speed + (2.0f * M_PI * s / egg_count);
+              //    float orbit_phase = time * 2.0f + sphere_offset;
+
                 //yz
                 //float sx = bx + 0.35f; 
-                float sx = bx ; 
-                float sz = bz + std::cos(orbit_phase) * sphere_orbit_radius;
-                float sy = by + std::sin(orbit_phase) * sphere_orbit_radius;
-                
-                model = Matrix_Translate(sx, sy, sz)
-                      * Matrix_Scale(sphere_scale, sphere_scale, sphere_scale);
-                glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-                glUniform1i(g_object_id_uniform, SPHERE);
-                DrawVirtualObject("the_sphere");
+              float sx = bx;
+              float sy = by + egg_orbit_radius * cosf(sphere_offset);
+              float sz = bz + egg_orbit_radius * sinf(sphere_offset);
+
+              glm::mat4 eggModel =
+                Matrix_Translate(sx, sy, sz) *
+                Matrix_Scale(sphere_scale, (sphere_scale + 0.04f), sphere_scale);
+
+              glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(eggModel));
+              glUniform1i(g_object_id_uniform, SPHERE);
+              DrawVirtualObject("the_sphere");
             }
-        }
+}
 
         // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.0f,0.0f) * Matrix_Scale(10.0f,1.0f,10.0f);
+        // === CÓDIGO ANTIGO (ERRADO) ===
+        // model = Matrix_Translate(0.0f,-1.0f,0.0f) * Matrix_Scale(10.0f,1.0f,10.0f);
+        //
+        // PROBLEMA: O plano do chão tinha escala 10.0f, o que era muito grande para a cena.
+        // Como os coelhos agora se movem em um círculo menor (jump_radius = 0.35f em vez de circle_radius = 2.5f),
+        // o plano não precisa ser tão grande. A escala de 4.0f é mais adequada para a nova cena.
+        // ==============================
+        model = Matrix_Translate(0.0f,-1.0f,0.0f) * Matrix_Scale(4.0f,1.0f,4.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
@@ -1536,4 +1618,3 @@ void PrintObjModelInfo(ObjModel* model)
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
 // vim: set spell spelllang=pt_br :
-
