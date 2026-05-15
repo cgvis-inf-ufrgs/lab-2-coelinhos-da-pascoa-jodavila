@@ -401,7 +401,7 @@ int main(int argc, char* argv[])
       #define PLANE  2
       float time = (float)glfwGetTime();
       float angle = time * 1.5f;
-      //const float PI = 3.14159265f; use M_PI
+      const float PI = 3.14159265f; // use PI
       
       // === CÓDIGO ANTIGO (ERRADO) ===
       // const int bunny_count = 6;
@@ -428,8 +428,8 @@ int main(int argc, char* argv[])
 
       const float base_y = 0.4f;  
       
-      const float jump_radius = 0.35f; 
-      const float jump_speed = 3.5f; 
+      const float jump_radius = 0.75f; 
+      const float jump_speed = 0.5f; 
       const float jump_height = 0.5f;  
     
       const float FLIP_INTERVAL  = 6.0f;   
@@ -460,10 +460,10 @@ int main(int argc, char* argv[])
           // ==============================
           
           float orbit_phase = (float)i / bunny_count;
-          float bunny_angle = -(time * bunny_speed / jump_radius + orbit_phase  * 2.0f * M_PI);
+          float bunny_angle = -(time * bunny_speed / jump_radius + orbit_phase  * 2.0f * PI);
           float bx = cosf(bunny_angle) * jump_radius;
           float bz = sinf(bunny_angle) * jump_radius;
-          float facing = atan2f(bx, bz) + M_PI;
+          float facing = atan2f(bx, bz) + PI;
 
           // ---- Estado do mortal ----
           // Cada coelho tem seu próprio offset de fase para não saltarem juntos
@@ -476,18 +476,18 @@ int main(int argc, char* argv[])
           
           // ---- Altura ----
           float by;
-          float sineY = base_y + jump_height * fabs(sinf(t * jump_speed * 2.0f * M_PI + phase * 2.0f * M_PI));
+          float sineY = base_y + jump_height * fabs(sinf(t * jump_speed * 2.0f * PI + phase * 2.0f * PI));
           if (i % 3 == 0){
             by = sineY;
           } else {
              if (isFlipping)
-            by = sineY + FLIP_HEIGHT * sinf(flipT * M_PI); // seno base + parábola do mortal por cima
+            by = sineY + FLIP_HEIGHT * sinf(flipT * PI); // seno base + parábola do mortal por cima
           else
             by = sineY;                                     // só o seno
           };
 
           // ---- Rotação do mortal (0 → 2π durante flipT) ----
-          float flipAngle = isFlipping ? (flipT * 2.0f * M_PI) : 0.0f;
+          float flipAngle = isFlipping ? (flipT * 2.0f * PI) : 0.0f;
 
           // ---- Matriz de modelagem ----
           glm::mat4 model =
@@ -521,7 +521,7 @@ int main(int argc, char* argv[])
               // ==============================
               
                 // faz que fiquem 180º de distancia
-              float sphere_offset = t * egg_orbit_speed + (2.0f * M_PI * s / egg_count);
+              float sphere_offset = t * egg_orbit_speed + (2.0f * PI * s / egg_count);
               //    float orbit_phase = time * 2.0f + sphere_offset;
 
                 //yz
